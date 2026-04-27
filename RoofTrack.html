@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1219">
+<title>RoofTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --prospect:#F4A460;--prospect-lt:#fdebd0;--prospect-dk:#a0581a;
+  --approved:#6AAF6E;--approved-lt:#dafada;--approved-dk:#2d7d31;
+  --completed:#5B9BD5;--completed-lt:#daeaf7;--completed-dk:#1a5fa3;
+  --invoiced:#E07B7B;--invoiced-lt:#fae0e0;--invoiced-dk:#a03030;
+  --bg:#0f1219;--s1:#161b28;--s2:#1e2436;--s3:#262d44;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#eef0f8;--text2:#8892b0;--text3:#4a5270;
+  --accent:#4d8ef7;--danger:#ff5060;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:14px;--r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(15,18,25,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 0 0}
+#nav-inner{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;max-width:680px;margin:0 auto}
+#nav-logo{font-size:16px;font-weight:700;letter-spacing:1px}
+#nav-logo em{color:var(--accent);font-style:normal}
+#sync-status{font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;color:var(--text3)}
+#sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s}
+#sync-dot.synced{background:#6AAF6E}
+#sync-dot.syncing{background:var(--warn,#ffaa33);animation:pulse 1s infinite}
+#sync-dot.error{background:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-add{background:var(--accent);border:none;color:#fff;border-radius:20px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity .15s}
+.nav-add:active{opacity:.8}
+#tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,18,25,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:0 0 env(safe-area-inset-bottom,0);display:flex}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;cursor:pointer;color:var(--text3);transition:color .15s;font-size:10px;font-weight:700;letter-spacing:.5px;gap:3px;text-transform:uppercase}
+.tab.on{color:var(--accent)}
+.tab svg{width:22px;height:22px;stroke-width:1.8}
+#main{padding-top:calc(52px + env(safe-area-inset-top,0));padding-bottom:calc(68px + env(safe-area-inset-bottom,0));max-width:680px;margin:0 auto}
+.scr{display:none}.scr.on{display:block}
+#filters{padding:12px 16px 8px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;padding-bottom:8px}
+#filters::-webkit-scrollbar{height:4px}
+#filters::-webkit-scrollbar-track{background:transparent}
+#filters::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+@media(max-width:600px){#filters{scrollbar-width:none}#filters::-webkit-scrollbar{display:none}}
+.pill{flex-shrink:0;padding:7px 15px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);transition:all .15s;font-family:var(--font)}
+.pill.on{color:#fff;border-color:transparent}
+.pill[data-v="All"].on{background:var(--accent)}
+.pill[data-v="Prospect"].on{background:var(--prospect-dk)}
+.pill[data-v="Approved"].on{background:var(--approved-dk)}
+.pill[data-v="Completed"].on{background:var(--completed-dk)}
+.pill[data-v="Invoiced"].on{background:var(--invoiced-dk)}
+.pill[data-v="OH"].on,.pill[data-v="TN"].on,.pill[data-v="KY"].on{background:var(--s3);border-color:var(--accent)}
+#srch-wrap{padding:10px 16px 6px}
+#srch{width:100%;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;color:var(--text);font-size:15px;font-family:var(--font);outline:none}
+#srch::placeholder{color:var(--text3)}
+#srch:focus{border-color:var(--accent)}
+#cnt{padding:0 16px 8px;font-size:12px;color:var(--text3);font-weight:500}
+#jlist{padding:0 16px;display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+.jcard{background:var(--s1);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .15s;position:relative;display:flex}
+.jcard:active{transform:scale(.985)}
+.jcard-bar{width:4px;flex-shrink:0}
+.jcard-body{flex:1;padding:13px 13px 11px;min-width:0}
+.jcard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px}
+.jcard-left{flex:1;min-width:0;margin-right:8px}
+.jnum{font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.otag{font-size:10px;font-weight:700;background:var(--s3);padding:2px 6px;border-radius:4px;color:var(--text2);letter-spacing:.3px}
+.jname{font-size:17px;font-weight:700;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbadge{flex-shrink:0;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.jmeta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);flex-wrap:wrap;margin-bottom:9px}
+.mitem{display:flex;align-items:center;gap:3px}
+.mitem svg{width:12px;height:12px;opacity:.6}
+.warn-red{color:var(--danger)!important}
+.jnote{font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:9px}
+.pbar{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px}
+.ring-wrap{position:relative;width:42px;height:42px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:3}
+.ring-arc{fill:none;stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .3s}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--mono)}
+#det{position:fixed;inset:0;z-index:200;background:var(--bg);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#det.on{transform:translateX(0)}
+#det-hdr{position:sticky;top:0;z-index:10;background:rgba(15,18,25,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,0) + 12px) 16px 12px;display:flex;align-items:center;gap:12px}
+#det-back{width:36px;height:36px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .15s;color:var(--text)}
+#det-back:active{transform:scale(.92)}
+#det-hdr-info{flex:1;min-width:0}
+#det-jnum{font-family:var(--mono);font-size:11px;color:var(--text2)}
+#det-jname{font-size:19px;font-weight:700;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#det-sbadge{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+#det-body{padding:16px;padding-bottom:calc(env(safe-area-inset-bottom,0) + 32px)}
+.icard{background:var(--s1);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.icard-hdr{padding:11px 16px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+.ifield{padding:11px 16px;border-bottom:1px solid var(--border)}
+.ifield:last-child{border-bottom:none}
+.ifield label{display:block;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ifield input,.ifield textarea,.ifield select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;color:var(--text);font-size:15px;font-family:var(--font);outline:none;resize:none;-webkit-appearance:none;appearance:none}
+.ifield input:focus,.ifield textarea:focus,.ifield select:focus{border-color:var(--accent)}
+.ifield textarea{min-height:75px}
+.ifield select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892b0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.stage-card{border-radius:var(--r);overflow:hidden;border:1px solid var(--border);margin-bottom:12px}
+.stage-hdr{padding:11px 16px;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.stage-cnt{font-size:11px;font-weight:500;font-family:var(--mono);opacity:.8}
+.citem{display:flex;align-items:center;gap:13px;padding:13px 16px;border-top:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .1s;-webkit-user-select:none;user-select:none}
+.citem:active{background:rgba(255,255,255,.03)}
+.citem.done .clabel{color:var(--text3);text-decoration:line-through}
+.cbox{width:22px;height:22px;border-radius:6px;flex-shrink:0;border:2px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.citem.done .cbox{border-color:transparent}
+.cbox svg{width:12px;height:12px;display:none}
+.citem.done .cbox svg{display:block}
+.clabel{font-size:15px;flex:1;line-height:1.35;transition:color .15s}
+.del-btn{width:100%;background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.25);color:var(--danger);border-radius:var(--r);padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:6px;transition:all .15s}
+.del-btn:active{background:rgba(255,80,96,.2)}
+.arc-btn{width:100%;background:rgba(110,175,110,.12);border:1px solid rgba(110,175,110,.3);color:#6AAF6E;border-radius:var(--r);padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:6px;transition:all .15s}
+.arc-btn:active{background:rgba(110,175,110,.25)}
+.unarc-btn{width:100%;background:rgba(77,142,247,.1);border:1px solid rgba(77,142,247,.3);color:var(--accent);border-radius:var(--r);padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:6px;transition:all .15s}
+.unarc-btn:active{background:rgba(77,142,247,.2)}
+.arc-card{background:var(--s1);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;cursor:pointer;display:flex;transition:transform .15s}
+.arc-card:active{transform:scale(.985)}
+.arc-card-bar{width:4px;flex-shrink:0;background:#444}
+.arc-card-body{flex:1;padding:12px 13px;min-width:0}
+.arc-badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(255,255,255,.08);color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+#sum-scr{padding:16px}
+.sum-title{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:3px}
+.sum-date{font-size:13px;color:var(--text2);margin-bottom:18px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.scard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:15px}
+.scard .sl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.scard .sv{font-size:30px;font-weight:700;font-family:var(--mono);letter-spacing:-1px}
+.scard .ss{font-size:12px;color:var(--text2);margin-top:2px}
+.ogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ocard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.ocard .on2{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ocard .ov{font-size:26px;font-weight:700;font-family:var(--mono)}
+.pcrd{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.pcrd-t{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px}
+.prow{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.prow:last-child{margin-bottom:0}
+.plbl{font-size:14px;font-weight:600;width:88px;flex-shrink:0}
+.ptrack{flex:1;height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.pbar2{height:100%;border-radius:4px;transition:width .4s}
+.pnum{font-family:var(--mono);font-size:14px;font-weight:600;width:22px;text-align:right;flex-shrink:0}
+#add-scr{padding:16px}
+.add-title{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:20px}
+.ff{margin-bottom:13px}
+.ff label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.ff input,.ff select{width:100%;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;color:var(--text);font-size:16px;font-family:var(--font);outline:none;-webkit-appearance:none}
+.ff input:focus,.ff select:focus{border-color:var(--accent)}
+.ff select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892b0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+.add-btn{width:100%;background:var(--accent);border:none;color:#fff;border-radius:var(--r);padding:15px;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px;transition:opacity .15s}
+.add-btn:active{opacity:.85}
+.nav-export{background:var(--s2);border:1px solid var(--border2);color:var(--text2);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s}
+.nav-export:active{opacity:.8}
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty svg{width:44px;height:44px;margin-bottom:12px;opacity:.25}
+.empty p{font-size:15px}
+#toast{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0) + 14px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--s3);border:1px solid var(--border2);color:var(--text);padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:999}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
+#loading h1{font-size:20px;font-weight:700;letter-spacing:1px}
+#loading h1 em{color:var(--accent);font-style:normal}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>ROOF<em>TRACK</em></h1>
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--text3)">Connecting to database...</div>
+</div>
+
+<div id="nav">
+  <div id="nav-inner">
+    <div id="nav-logo">ROOF<em>TRACK</em></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="sync-status"><div id="sync-dot"></div><span id="sync-label">Connecting</span></div>
+      <button class="nav-export" onclick="exportCSV()" title="Export to CSV">&#8595; CSV</button>
+      <button class="nav-add" onclick="goAdd()">+ New Job</button>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="jobs-scr" class="scr on">
+    <div id="filters">
+      <button class="pill on" data-t="stage" data-v="All" onclick="filt(this,'stage','All')">All</button>
+      <button class="pill" data-t="stage" data-v="Prospect" onclick="filt(this,'stage','Prospect')">Prospect</button>
+      <button class="pill" data-t="stage" data-v="Approved" onclick="filt(this,'stage','Approved')">Approved</button>
+      <button class="pill" data-t="stage" data-v="Completed" onclick="filt(this,'stage','Completed')">Completed</button>
+      <button class="pill" data-t="stage" data-v="Invoiced" onclick="filt(this,'stage','Invoiced')">Invoiced</button>
+      <button class="pill" data-t="office" data-v="OH" onclick="filt(this,'office','OH')">OH</button>
+      <button class="pill" data-t="office" data-v="TN" onclick="filt(this,'office','TN')">TN</button>
+      <button class="pill" data-t="office" data-v="KY" onclick="filt(this,'office','KY')">KY</button>
+      <div style="width:1px;background:var(--border);margin:0 4px;flex-shrink:0"></div>
+      <button class="pill on" data-t="sort" data-v="stage" onclick="setSort(this,'stage')">By Stage</button>
+      <button class="pill" data-t="sort" data-v="contact" onclick="setSort(this,'contact')">By Contact</button>
+      <button class="pill" data-t="sort" data-v="office" onclick="setSort(this,'office')">By Office</button>
+    </div>
+    <div id="srch-wrap"><input id="srch" type="search" placeholder="Search jobs, customers, reps…" oninput="draw()" autocomplete="off" spellcheck="false"></div>
+    <div id="cnt"></div>
+    <div id="jlist"></div>
+  </div>
+  <div id="sum-scr" class="scr">
+    <div class="sum-title">Summary</div>
+    <div class="sum-date" id="s-date"></div>
+    <div class="sgrid">
+      <div class="scard"><div class="sl">Total Jobs</div><div class="sv" id="s-tot">0</div><div class="ss">active pipeline</div></div>
+      <div class="scard"><div class="sl">Need Follow-up</div><div class="sv" id="s-ov" style="color:var(--danger)">0</div><div class="ss">last contact &gt; 2 days</div></div>
+    </div>
+    <div class="ogrid">
+      <div class="ocard"><div class="on2">Ohio</div><div class="ov" id="s-oh">0</div></div>
+      <div class="ocard"><div class="on2">Tennessee</div><div class="ov" id="s-tn">0</div></div>
+      <div class="ocard"><div class="on2">Kentucky</div><div class="ov" id="s-ky">0</div></div>
+    </div>
+    <div class="pcrd"><div class="pcrd-t">Pipeline by Stage</div><div id="p-rows"></div></div>
+  </div>
+  <div id="arc-scr" class="scr">
+    <div style="padding:16px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:3px">Archived Jobs</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Completed jobs moved out of active pipeline</div>
+      <div id="arc-list"></div>
+    </div>
+  </div>
+  <div id="add-scr" class="scr">
+    <div class="add-title">New Job</div>
+    <div class="ff"><label>Office</label><select id="a-off"><option value="OH">OH — Ohio</option><option value="TN">TN — Tennessee</option><option value="KY">KY — Kentucky</option></select></div>
+    <div class="ff"><label>Job Number</label><input id="a-job" type="text" placeholder="e.g. BNA-85" autocomplete="off"></div>
+    <div class="ff"><label>Customer Name</label><input id="a-cust" type="text" placeholder="Full name" autocomplete="off"></div>
+    <div class="ff"><label>Sales Rep</label><input id="a-rep" type="text" placeholder="Rep name" autocomplete="off"></div>
+    <button class="add-btn" onclick="addJob()">Add Job</button>
+  </div>
+</div>
+
+<div id="tabs">
+  <div class="tab on" onclick="goScr('jobs')" id="t-jobs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Jobs
+  </div>
+  <div class="tab" onclick="goScr('sum')" id="t-sum">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Summary
+  </div>
+  <div class="tab" onclick="goScr('arc')" id="t-arc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+    Archived
+  </div>
+</div>
+
+<div id="det">
+  <div id="det-hdr">
+    <div id="det-back" onclick="closeDet()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div id="det-hdr-info">
+      <div id="det-jnum"></div>
+      <div id="det-jname"></div>
+    </div>
+    <div id="det-sbadge"></div>
+  </div>
+  <div id="det-body"></div>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,collection,doc,setDoc,getDocs,updateDoc,deleteDoc,onSnapshot}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const FB={apiKey:"AIzaSyD2472jioJIyrBwyudB52oSYqfhs6n9Z1E",authDomain:"roof-tracker-b9b9d.firebaseapp.com",projectId:"roof-tracker-b9b9d",storageBucket:"roof-tracker-b9b9d.firebasestorage.app",messagingSenderId:"737880471009",appId:"1:737880471009:web:405341398966cd562f8ea0"};
+
+const app=initializeApp(FB);
+const db=getFirestore(app);
+const COL='jobs';
+
+const STAGES=[
+  {key:'prospect',lbl:'Prospect',color:'#F4A460',dk:'#a0581a',steps:['Claim is filed','Setup ACH with HO','Contract is signed','Get roof measurements','Scope is received','Scope audited & supplements noted','Before photos uploaded','Get FE check','Move to approved']},
+  {key:'approved',lbl:'Approved',color:'#6AAF6E',dk:'#2d7d31',steps:['Major Supps Approved','Order material','Schedule labor','Oversee install','Move to complete']},
+  {key:'completed',lbl:'Completed',color:'#5B9BD5',dk:'#1a5fa3',steps:['Review photos','Leftover Materials?','Supplement adjustment sent to adjuster','Adjuster sends new scope','All parties aligned on new scope','Payments and Financial worksheet audited','Schedule other trades','Sales Rep Approved COC','Send COC','Move to invoiced']},
+  {key:'invoiced',lbl:'Invoiced',color:'#E07B7B',dk:'#a03030',steps:['Check sent out','Work with homeowner on BE check','Close job','Review Request Sent','Review Written']},
+];
+const RANGES=[{s:0,e:8},{s:9,e:13},{s:14,e:23},{s:24,e:28}];
+const TOTAL=29;
+
+const SEED=[{"id":"1","office":"KY","job":"LOU-41","customer":"Roy Block","stage":"Prospect","rep":"JJ","notes":"Blake to audit scope, JJ to get FE check","money":"Blake","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"2","office":"KY","job":"LOU-42","customer":"Abby Wagner","stage":"Approved","rep":"JJ","notes":"Roof & Gutter Only, Ready to schedule?","money":"Austin","lastContact":"2026-04-21","checks":[true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,false]},{"id":"3","office":"KY","job":"LOU-37","customer":"Steve Simon","stage":"Approved","rep":"Austin","notes":"Waiting on adjuster approval","money":"Adjsuter","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"4","office":"KY","job":"LOU-23","customer":"Chris Migliaccio","stage":"Completed","rep":"Nate","notes":"Gutters on 4/27","money":"Nate","lastContact":"2026-04-27","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"5","office":"KY","job":"LOU-8","customer":"Clay Kannappell","stage":"Prospect","rep":"JJ","notes":"Still sorting out pricing with materials","money":"JJ","lastContact":"2026-01-20","checks":[true,true,false,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"6","office":"KY","job":"LOU-28","customer":"Michael Hager","stage":"Completed","rep":"Tim","notes":"Waiting on adjuster to approve supp","money":"Adjuster","lastContact":"2026-04-22","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,true,false,false,false,false,false,false]},{"id":"7","office":"KY","job":"LOU-27","customer":"Karen Milligan","stage":"Completed","rep":"JJ","notes":"Need Copper Scheduled","money":"JJ","lastContact":"2026-04-22","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,false,false]},{"id":"8","office":"KY","job":"LOU-24","customer":"Dan Martin","stage":"Invoiced","rep":"Evan","notes":"BE Received, Austin to close","money":"Austin","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"9","office":"KY","job":"LOU-11","customer":"Toki Masubuchi","stage":"Completed","rep":"Austin","notes":"HO to approve gutters, BE of 17,589.11 sent 4/21 via check","money":"Austin","lastContact":"2026-04-27","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,false,false]},{"id":"10","office":"KY","job":"LOU-9","customer":"Elizabeth Starkey","stage":"Invoiced","rep":"JJ","notes":"HO owes remaining balance","money":"JJ","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"11","office":"KY","job":"LOU-18","customer":"Barry Meyers","stage":"Invoiced","rep":"Evan","notes":"Austin to send ACH","money":"Austin","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false]},{"id":"12","office":"OH","job":"CMH-22","customer":"Chrissy Strawser","stage":"Approved","rep":"James","notes":"Supplements?","money":"James","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"13","office":"OH","job":"CMH-21","customer":"Sarah Diggs","stage":"Approved","rep":"Austin","notes":"Install 4/29","money":"","lastContact":"","checks":[true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"14","office":"OH","job":"OH-6","customer":"Kamal Kabra","stage":"Completed","rep":"Austin","notes":"Need siding installed","money":"Austin","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false]},{"id":"15","office":"OH","job":"CMH-16","customer":"Denny English","stage":"Invoiced","rep":"James","notes":"BE Check Sent, ETA 3 weeks","money":"James","lastContact":"2026-04-30","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false]},{"id":"16","office":"OH","job":"CMH-15","customer":"Ellen Sapp","stage":"Completed","rep":"James","notes":"Gutters scheduled 4/24, James working to get BE check","money":"James","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,false,false]},{"id":"17","office":"OH","job":"CMH-12","customer":"Bill Ebner","stage":"Invoiced","rep":"James","notes":"BE has been sent on 4/15","money":"James","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false]},{"id":"18","office":"OH","job":"CMH-8","customer":"Anita Elliott","stage":"Invoiced","rep":"James","notes":"BE has been sent on 4/4","money":"James","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false]},{"id":"19","office":"OH","job":"CMH-29","customer":"Robert Held","stage":"Prospect","rep":"Austin / James","notes":"Supplements? / need FE Check","money":"Austin / James","lastContact":"2026-04-24","checks":[true,true,true,true,true,false,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"20","office":"OH","job":"CMH-20","customer":"Brian Mucciardi","stage":"Approved","rep":"Austin / Colby","notes":"Install on 4/29","money":"","lastContact":"","checks":[true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"21","office":"TN","job":"BNA-52","customer":"David Cooper","stage":"Completed","rep":"Nate","notes":"Blake to confirm increase in scope, Nate to get leftover material photo","money":"Nate","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,false,true,false,false,false,false,false,false,false,false]},{"id":"22","office":"TN","job":"BNA-38","customer":"Building Lives","stage":"Completed","rep":"Evan","notes":"Gutters on 4/27","money":"JJ","lastContact":"2026-04-27","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"23","office":"TN","job":"BNA-62","customer":"Matt Strahan","stage":"Invoiced","rep":"Evan","notes":"COC Sent 4/24","money":"","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false]},{"id":"24","office":"TN","job":"BNA-30","customer":"Andy Macdonald","stage":"Invoiced","rep":"JJ","notes":"COC Sent 4/22","money":"","lastContact":"2026-04-22","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false]},{"id":"25","office":"TN","job":"BNA-36","customer":"Chris Lamonte","stage":"Completed","rep":"Evan","notes":"Gutters, work with HO on BE Check","money":"Evan / JJ","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,true,true,true,true,false,false,false,false]},{"id":"26","office":"TN","job":"BNA-66","customer":"Charles Smith","stage":"Completed","rep":"JJ","notes":"Waiting for approval to send COC","money":"JJ","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,false,false,true,false,false,false,false,false]},{"id":"27","office":"TN","job":"TN-8","customer":"Bhavin Patel","stage":"Completed","rep":"JJ","notes":"Metal needs completed, BE was sent 3/16","money":"JJ","lastContact":"2026-04-23","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,true,true,true,true,true,false,false,false]},{"id":"28","office":"TN","job":"BNA-60","customer":"John Miller","stage":"Invoiced","rep":"Tim / Cooper","notes":"BE Check Sent on 4/16","money":"Tim / Cooper","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false]},{"id":"29","office":"TN","job":"BNA-22","customer":"Patrick Murphy","stage":"Invoiced","rep":"JJ","notes":"BE Received, Austin to close","money":"Austin","lastContact":"2026-04-17","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"30","office":"TN","job":"BNA-35","customer":"Samih Shehata","stage":"Invoiced","rep":"Evan","notes":"BE Received, Austin to close","money":"Austin","lastContact":"2026-04-15","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"31","office":"TN","job":"TN-20","customer":"James May","stage":"Invoiced","rep":"Evan","notes":"Need to pay JJ for gutters","money":"JJ","lastContact":"2026-04-22","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"32","office":"TN","job":"TN-6","customer":"Eric Broomfield","stage":"Invoiced","rep":"JJ","notes":"BE Received","money":"Evan","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false]},{"id":"33","office":"TN","job":"BNA-75","customer":"Tyler Tedeschi","stage":"Prospect","rep":"JJ","notes":"JJ to approve supp","money":"JJ","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"34","office":"TN","job":"BNA-81","customer":"William Brenley","stage":"Prospect","rep":"Cooper","notes":"Need to get with Austin on next steps","money":"","lastContact":"","checks":[true,true,true,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"35","office":"TN","job":"BNA-77","customer":"Susan Moyer","stage":"Prospect","rep":"JJ","notes":"COC to be sent by 6/14/26","money":"","lastContact":"","checks":[true,true,false,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"36","office":"TN","job":"BNA-82","customer":"Roberta / Gary Farmer","stage":"Prospect","rep":"Cooper","notes":"Waiting on adjuster","money":"","lastContact":"","checks":[true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"37","office":"TN","job":"BNA-83","customer":"Sarah Slack","stage":"Prospect","rep":"JJ / Nate","notes":"","money":"","lastContact":"","checks":[true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"38","office":"TN","job":"BNA-84","customer":"Adam Rohrbach","stage":"Prospect","rep":"Evan","notes":"Working on supps and FE","money":"Blake / Ryan","lastContact":"2026-04-24","checks":[true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]},{"id":"39","office":"OH","job":"CMH-33","customer":"Lisa","stage":"Prospect","rep":"Austin","notes":"","money":"","lastContact":"","checks":[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]}];
+
+let jobs=[],fStage='All',fOffice='All',fSort='stage',curId=null,saveTimer=null;
+
+function setSyncStatus(state){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-label');
+  dot.className='';
+  if(state==='synced'){dot.classList.add('synced');lbl.textContent='Synced';}
+  else if(state==='syncing'){dot.classList.add('syncing');lbl.textContent='Saving...';}
+  else if(state==='error'){dot.classList.add('error');lbl.textContent='Offline';}
+  else{lbl.textContent='Connecting';}
+}
+
+async function initData(){
+  try{
+    setSyncStatus('connecting');
+    const snap=await getDocs(collection(db,COL));
+    if(snap.empty){
+      // First time — seed with existing jobs
+      setSyncStatus('syncing');
+      for(const j of SEED){
+        await setDoc(doc(db,COL,j.id),j);
+      }
+      jobs=[...SEED];
+    }else{
+      jobs=snap.docs.map(d=>d.data());
+    }
+    setSyncStatus('synced');
+    document.getElementById('loading').style.display='none';
+    draw();
+    // Set up real-time listener
+    onSnapshot(collection(db,COL),(snap)=>{
+      jobs=snap.docs.map(d=>d.data());
+      draw();
+      if(curId)drawDet();
+    });
+  }catch(e){
+    setSyncStatus('error');
+    document.getElementById('loading').innerHTML='<h1>ROOF<em>TRACK</em></h1><div style="color:#ff5060;font-size:14px;text-align:center;padding:20px">Connection failed.<br>Check your internet and reload.</div>';
+    console.error(e);
+  }
+}
+
+function getJob(id){return jobs.find(j=>j.id===id);}
+
+function calcStage(ch){
+  const lbls=['Prospect','Approved','Completed','Invoiced'];
+  for(let i=0;i<RANGES.length;i++){
+    const r=RANGES[i];
+    if(ch.slice(r.s,r.e+1).some(v=>!v))return lbls[i];
+  }
+  return'Invoiced';
+}
+function pct(ch){return Math.round(ch.filter(Boolean).length/TOTAL*100);}
+function overdue(lc){
+  if(!lc)return false;
+  const d=new Date(lc+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);
+  return(t-d)/86400000>2;
+}
+function sc(s){return{Prospect:'#F4A460',Approved:'#6AAF6E',Completed:'#5B9BD5',Invoiced:'#E07B7B'}[s]||'#888';}
+
+async function saveJob(id){
+  const j=getJob(id);if(!j)return;
+  setSyncStatus('syncing');
+  try{
+    await setDoc(doc(db,COL,id),j);
+    setSyncStatus('synced');
+  }catch(e){setSyncStatus('error');toast('Save failed — check connection');}
+}
+
+function debounceSave(id){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveJob(id),800);
+}
+
+function goScr(name){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(name+'-scr').classList.add('on');
+  const t=document.getElementById('t-'+name);if(t)t.classList.add('on');
+  if(name==='sum')drawSum();
+  if(name==='jobs')draw();
+  if(name==='arc')drawArchived();
+  window.scrollTo(0,0);
+}
+window.goScr=goScr;
+
+function goAdd(){
+  goScr('add');
+  document.getElementById('a-job').value='';
+  document.getElementById('a-cust').value='';
+  document.getElementById('a-rep').value='';
+}
+window.goAdd=goAdd;
+
+function filt(el,type,val){
+  if(type==='stage'){
+    fStage=val;
+    document.querySelectorAll('.pill[data-t="stage"]').forEach(p=>p.classList.remove('on'));
+    el.classList.add('on');
+  }else{
+    fOffice=fOffice===val?'All':val;
+    document.querySelectorAll('.pill[data-t="office"]').forEach(p=>p.classList.remove('on'));
+    if(fOffice!=='All')el.classList.add('on');
+  }
+  draw();
+}
+window.filt=filt;
+
+function setSort(el,val){
+  fSort=val;
+  document.querySelectorAll('.pill[data-t="sort"]').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  draw();
+}
+window.setSort=setSort;
+
+function filtered(){
+  const q=(document.getElementById('srch')?.value||'').toLowerCase().trim();
+  return jobs.filter(j=>{
+    if(j.archived)return false;
+    const st=calcStage(j.checks);
+    if(fStage!=='All'&&st!==fStage)return false;
+    if(fOffice!=='All'&&j.office!==fOffice)return false;
+    if(q&&![j.job,j.customer,j.rep,j.notes,j.office].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function draw(){
+  const list=document.getElementById('jlist');
+  const ord={Prospect:0,Approved:1,Completed:2,Invoiced:3};
+  const items=filtered().sort((a,b)=>{
+    if(fSort==='contact'){
+      // No contact goes to bottom, then oldest first
+      if(!a.lastContact&&!b.lastContact)return 0;
+      if(!a.lastContact)return 1;
+      if(!b.lastContact)return-1;
+      return new Date(a.lastContact)-new Date(b.lastContact);
+    }
+    if(fSort==='office'){
+      const oc=a.office.localeCompare(b.office);
+      if(oc!==0)return oc;
+      return(ord[calcStage(a.checks)]||0)-(ord[calcStage(b.checks)]||0);
+    }
+    // default: stage
+    return(ord[calcStage(a.checks)]||0)-(ord[calcStage(b.checks)]||0);
+  });
+  document.getElementById('cnt').textContent=items.length+' job'+(items.length!==1?'s':'');
+  if(!items.length){
+    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No jobs match</p></div>';
+    return;
+  }
+  list.innerHTML=items.map(j=>{
+    const st=calcStage(j.checks),p=pct(j.checks),c=sc(st),od=overdue(j.lastContact);
+    const lc=j.lastContact?new Date(j.lastContact+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'No contact';
+    const R=17,circ=2*Math.PI*R,off=circ-(p/100)*circ;
+    return`<div class="jcard" onclick="openDet('${j.id}')">
+      <div class="jcard-bar" style="background:${c}"></div>
+      <div class="jcard-body">
+        <div class="jcard-top">
+          <div class="jcard-left">
+            <div class="jnum">${esc(j.job)} <span class="otag">${j.office}</span></div>
+            <div class="jname">${esc(j.customer)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="ring-wrap"><svg width="42" height="42" viewBox="0 0 42 42"><circle class="ring-bg" cx="21" cy="21" r="${R}"/><circle class="ring-arc" cx="21" cy="21" r="${R}" stroke="${c}" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/></svg><div class="ring-pct" style="color:${c}">${p}%</div></div>
+            <div class="sbadge" style="background:${c}20;color:${c}">${st}</div>
+          </div>
+        </div>
+        ${j.notes?`<div class="jnote">${esc(j.notes)}</div>`:''}
+        <div class="jmeta">
+          ${j.rep?`<span class="mitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${esc(j.rep)}</span>`:''}
+          <span class="mitem${od?' warn-red':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${od?'\u26a0 ':''}${lc}</span>
+        </div>
+        <div class="pbar"><div class="pfill" style="width:${p}%;background:${c}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.draw=draw;
+
+function openDet(id){
+  curId=id;drawDet();
+  document.getElementById('det').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+window.openDet=openDet;
+
+function closeDet(){
+  document.getElementById('det').classList.remove('on');
+  document.body.style.overflow='';
+  curId=null;draw();
+}
+window.closeDet=closeDet;
+
+function drawDet(){
+  const j=getJob(curId);if(!j)return;
+  const st=calcStage(j.checks),c=sc(st);
+  document.getElementById('det-jnum').textContent=j.job;
+  document.getElementById('det-jname').textContent=j.customer;
+  const b=document.getElementById('det-sbadge');
+  b.textContent=st;b.style.background=c+'22';b.style.color=c;
+  document.getElementById('det-body').innerHTML=`
+    <div class="icard">
+      <div class="icard-hdr">Job Info</div>
+      <div class="ifield"><label>Office</label><select onchange="upd('${j.id}','office',this.value)">
+        <option value="OH"${j.office==='OH'?' selected':''}>OH</option>
+        <option value="TN"${j.office==='TN'?' selected':''}>TN</option>
+        <option value="KY"${j.office==='KY'?' selected':''}>KY</option>
+      </select></div>
+      <div class="ifield"><label>Job Number</label><input type="text" value="${esc(j.job)}" onchange="upd('${j.id}','job',this.value)" autocomplete="off"></div>
+      <div class="ifield"><label>Customer Name</label><input type="text" value="${esc(j.customer)}" onchange="upd('${j.id}','customer',this.value)" autocomplete="off"></div>
+      <div class="ifield"><label>Sales Rep</label><input type="text" value="${esc(j.rep||'')}" onchange="upd('${j.id}','rep',this.value)" autocomplete="off"></div>
+      <div class="ifield"><label>Who Has My Money</label><input type="text" value="${esc(j.money||'')}" onchange="upd('${j.id}','money',this.value)" autocomplete="off"></div>
+      <div class="ifield"><label>Last Contact</label><input type="date" value="${j.lastContact||''}" onchange="upd('${j.id}','lastContact',this.value)"></div>
+      <div class="ifield"><label>Notes</label><textarea onchange="upd('${j.id}','notes',this.value)" autocomplete="off">${esc(j.notes||'')}</textarea></div>
+    </div>
+    ${STAGES.map((s,si)=>{
+      const r=RANGES[si];
+      const done=j.checks.slice(r.s,r.e+1).filter(Boolean).length;
+      const cur=st===s.lbl;
+      return`<div class="stage-card" style="border-color:${s.color}33">
+        <div class="stage-hdr" style="background:${s.color}${cur?'30':'15'};color:${s.color}">
+          <span>${s.lbl}</span><span class="stage-cnt">${done}/${s.steps.length}</span>
+        </div>
+        ${s.steps.map((step,idx)=>{
+          const gi=r.s+idx,chk=j.checks[gi];
+          return`<div class="citem${chk?' done':''}" onclick="tog('${j.id}',${gi})">
+            <div class="cbox" style="${chk?'background:'+s.color+';border-color:'+s.color:''}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="clabel">${esc(step)}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+    ${j.archived
+      ? `<button class="unarc-btn" onclick="unarchiveJob('${j.id}')">&#8593; Restore to Active</button>`
+      : `<button class="arc-btn" onclick="archiveJob('${j.id}')">&#8594; Archive Job</button>`
+    }
+    <button class="del-btn" onclick="delJob('${j.id}')">Delete Job</button>
+  `;
+}
+window.drawDet=drawDet;
+
+function tog(id,idx){
+  const j=getJob(id);if(!j)return;
+  j.checks[idx]=!j.checks[idx];
+  debounceSave(id);
+  const newSt=calcStage(j.checks),c=sc(newSt);
+  const b=document.getElementById('det-sbadge');
+  if(b){b.textContent=newSt;b.style.background=c+'22';b.style.color=c;}
+  const items=document.querySelectorAll('.citem');
+  items.forEach(el=>{
+    if(el.getAttribute('onclick')===`tog('${id}',${idx})`){
+      const chk=j.checks[idx];
+      el.classList.toggle('done',chk);
+      const box=el.querySelector('.cbox');
+      const si=RANGES.findIndex(r=>idx>=r.s&&idx<=r.e);
+      const col=si>=0?STAGES[si].color:'#888';
+      box.style.background=chk?col:'';box.style.borderColor=chk?col:'';
+    }
+  });
+  const hdrs=document.querySelectorAll('.stage-hdr .stage-cnt');
+  STAGES.forEach((s,si)=>{
+    const r=RANGES[si];
+    const done=j.checks.slice(r.s,r.e+1).filter(Boolean).length;
+    if(hdrs[si])hdrs[si].textContent=done+'/'+s.steps.length;
+    const hdr=hdrs[si]?.parentElement;
+    if(hdr)hdr.style.background=s.color+(newSt===s.lbl?'30':'15');
+  });
+}
+window.tog=tog;
+
+function upd(id,field,val){
+  const j=getJob(id);if(!j)return;
+  j[field]=val;
+  debounceSave(id);
+  toast('Saved');
+  if(field==='job')document.getElementById('det-jnum').textContent=val;
+  if(field==='customer')document.getElementById('det-jname').textContent=val;
+}
+window.upd=upd;
+
+async function delJob(id){
+  if(!confirm('Delete this job?'))return;
+  await deleteDoc(doc(db,COL,id));
+  jobs=jobs.filter(j=>j.id!==id);
+  closeDet();toast('Deleted');
+}
+window.delJob=delJob;
+
+async function addJob(){
+  const office=document.getElementById('a-off').value;
+  const job=document.getElementById('a-job').value.trim();
+  const cust=document.getElementById('a-cust').value.trim();
+  const rep=document.getElementById('a-rep').value.trim();
+  if(!job||!cust){toast('Job # and customer required');return;}
+  const newJob={id:Date.now().toString(),office,job,customer:cust,stage:'Prospect',rep,notes:'',money:'',lastContact:'',checks:new Array(TOTAL).fill(false)};
+  setSyncStatus('syncing');
+  await setDoc(doc(db,COL,newJob.id),newJob);
+  setSyncStatus('synced');
+  toast('Job added!');
+  goScr('jobs');
+}
+window.addJob=addJob;
+
+function drawSum(){
+  document.getElementById('s-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('s-tot').textContent=jobs.filter(j=>!j.archived).length;
+  document.getElementById('s-ov').textContent=jobs.filter(j=>!j.archived&&overdue(j.lastContact)).length;
+  document.getElementById('s-oh').textContent=jobs.filter(j=>!j.archived&&j.office==='OH').length;
+  document.getElementById('s-tn').textContent=jobs.filter(j=>!j.archived&&j.office==='TN').length;
+  document.getElementById('s-ky').textContent=jobs.filter(j=>!j.archived&&j.office==='KY').length;
+  const cnt={};STAGES.forEach(s=>cnt[s.lbl]=0);
+  jobs.filter(j=>!j.archived).forEach(j=>{const s=calcStage(j.checks);if(cnt[s]!==undefined)cnt[s]++;});
+  const mx=Math.max(...Object.values(cnt),1);
+  document.getElementById('p-rows').innerHTML=STAGES.map(s=>`
+    <div class="prow">
+      <div class="plbl" style="color:${s.color}">${s.lbl}</div>
+      <div class="ptrack"><div class="pbar2" style="width:${cnt[s.lbl]/mx*100}%;background:${s.color}"></div></div>
+      <div class="pnum" style="color:${s.color}">${cnt[s.lbl]}</div>
+    </div>`).join('');
+}
+window.drawSum=drawSum;
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let tt;
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1800);}
+
+let tx=0;
+document.getElementById('det').addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+document.getElementById('det').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-tx>80&&tx<60)closeDet();},{passive:true});
+
+
+async function archiveJob(id){
+  const j=getJob(id);if(!j)return;
+  if(!confirm('Move '+j.job+' to archived? You can restore it anytime.'))return;
+  j.archived=true;
+  await setDoc(doc(db,COL,id),j);
+  closeDet();
+  toast(j.job+' archived');
+}
+window.archiveJob=archiveJob;
+
+async function unarchiveJob(id){
+  const j=getJob(id);if(!j)return;
+  j.archived=false;
+  await setDoc(doc(db,COL,id),j);
+  closeDet();
+  goScr('jobs');
+  toast(j.job+' restored to active');
+}
+window.unarchiveJob=unarchiveJob;
+
+function drawArchived(){
+  const list=document.getElementById('arc-list');
+  const archived=jobs.filter(j=>j.archived);
+  if(!archived.length){
+    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><p>No archived jobs yet</p></div>';
+    return;
+  }
+  list.innerHTML=archived.map(j=>{
+    const sc2={'Prospect':'#F4A460','Approved':'#6AAF6E','Completed':'#5B9BD5','Invoiced':'#E07B7B'};
+    const lc=j.lastContact?new Date(j.lastContact+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+    return`<div class="arc-card" onclick="openDet('${j.id}')">
+      <div class="arc-card-bar" style="background:#555"></div>
+      <div class="arc-card-body">
+        <div class="arc-badge">Archived</div>
+        <div style="font-size:16px;font-weight:700;letter-spacing:-.2px">${esc(j.customer)}</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text2);margin-top:2px">${esc(j.job)} · ${j.office}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">Rep: ${esc(j.rep||'—')} · Last contact: ${lc}</div>
+        ${j.notes?`<div style="font-size:12px;color:var(--text3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(j.notes)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+function exportCSV(){
+  const STAGE_NAMES=['Prospect','Approved','Completed','Invoiced'];
+  const ALL_STEPS=[
+    'Claim is filed','Setup ACH with HO','Contract is signed','Get roof measurements','Scope is received','Scope audited & supplements noted','Before photos uploaded','Get FE check','Move to approved',
+    'Major Supps Approved','Order material','Schedule labor','Oversee install','Move to complete',
+    'Review photos','Leftover Materials?','Supplement adjustment sent to adjuster','Adjuster sends new scope','All parties aligned on new scope','Payments and Financial worksheet audited','Schedule other trades','Sales Rep Approved COC','Send COC','Move to invoiced',
+    'Check sent out','Work with homeowner on BE check','Close job','Review Request Sent','Review Written'
+  ];
+  const headers=['Office','Job Name','Customer Name','Current Stage','Sales Rep','Notes','Who Has My Money','Last Contact','% Done',...ALL_STEPS];
+  const rows=jobs.map(j=>{
+    const stage=calcStage(j.checks);
+    const done=Math.round(j.checks.filter(Boolean).length/TOTAL*100);
+    const lc=j.lastContact?new Date(j.lastContact+'T00:00:00').toLocaleDateString('en-US'):'';
+    const checkVals=j.checks.map(c=>c?'Yes':'No');
+    return[j.office,j.job,j.customer,stage,j.rep||'',j.notes||'',j.money||'',lc,done+'%',...checkVals];
+  });
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+(String(v).replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='RoofTrack_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded!');
+}
+window.exportCSV=exportCSV;
+
+initData();
+</script>
+</body>
+</html>
